@@ -1,0 +1,7 @@
+# Copiar a terraform.tfvars y completar con tus valores reales
+# NUNCA commitear terraform.tfvars al repositorio (ya está en .gitignore)
+
+azure_subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # az account show --query id
+db_admin_username     = "notevateadmin"
+db_admin_password     = "Notevate2026!"   # Cambiar: mín 8 chars, mayús + núm + especial
+dev_ip_address        = "0.0.0.0"         # Tu IP local: curl ifconfig.me

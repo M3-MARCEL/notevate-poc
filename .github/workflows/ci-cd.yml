@@ -1,0 +1,91 @@
+name: Notevate — CI/CD Pipeline (DevSecOps)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_BACKEND: notevate/backend
+
+jobs:
+  # ─── ETAPA 1: CALIDAD DE CÓDIGO ─────────────────────────────────────────────
+  test:
+    name: Lint + Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -r backend/requirements.txt flake8
+      - run: flake8 backend/src/ --max-line-length=100 --exclude=__pycache__
+
+  # ─── ETAPA 2: BUILD + ESCANEO TRIVY (Shift-Left Security) ───────────────────
+  build-and-scan:
+    name: Build + Scan de Seguridad (Trivy)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build imagen Docker backend
+        run: docker build -t $ECR_BACKEND:${{ github.sha }} ./backend
+
+      - name: Escanear imagen con Aqua Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.ECR_BACKEND }}:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"   # Bloquea el pipeline si encuentra vulnerabilidades críticas
+
+      - name: Publicar resultados en GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # ─── ETAPAS 3-5: PUSH + DEPLOY (solo en rama main) ──────────────────────────
+  deploy:
+    name: Push a ECR + Deploy a ECS
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Autenticar en AWS (OIDC — sin claves estáticas)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login a Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag y push imagen a ECR
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          docker build -t $REGISTRY/$ECR_BACKEND:${{ github.sha }} ./backend
+          docker tag  $REGISTRY/$ECR_BACKEND:${{ github.sha }} $REGISTRY/$ECR_BACKEND:latest
+          docker push $REGISTRY/$ECR_BACKEND:${{ github.sha }}
+          docker push $REGISTRY/$ECR_BACKEND:latest
+
+      - name: Actualizar servicio ECS (rolling update)
+        run: |
+          aws ecs update-service \
+            --cluster notevate-cluster \
+            --service notevate-backend-svc \
+            --force-new-deployment
+          echo "✅ Despliegue iniciado — ECS reemplazará las tareas de forma gradual"

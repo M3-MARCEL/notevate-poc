@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/terraform.tfvars
+infra/*.tfvars
+!infra/*.tfvars.example
+
+# Node
+frontend/node_modules/
+frontend/build/
+
+# OS
+.DS_Store
+# Variables de entorno frontend
+frontend/.env
+!frontend/.env.example
