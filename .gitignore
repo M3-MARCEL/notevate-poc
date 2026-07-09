@@ -21,3 +21,11 @@ frontend/build/
 # Variables de entorno frontend
 frontend/.env
 !frontend/.env.example
+
+# SSH keys
+*.pem
+infra/ssh
+
+# Secrets
+taskdef.json
+*.pem

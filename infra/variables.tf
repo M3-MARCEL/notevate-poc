@@ -5,9 +5,9 @@ variable "aws_region" {
 }
 
 variable "azure_region" {
-  description = "Región Azure — East US minimiza latencia cross-cloud hacia us-east-1"
+  description = "Region Azure"
   type        = string
-  default     = "East US"
+  default     = "Brazil South"
 }
 
 variable "azure_subscription_id" {

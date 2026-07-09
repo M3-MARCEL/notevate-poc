@@ -12,9 +12,22 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crear tablas en Azure SQL al arrancar el contenedor
-    Base.metadata.create_all(bind=engine)
-    logger.info("✅ Conexión a Azure SQL establecida — tablas inicializadas")
+    try:
+        # Crear tablas en la base de datos usando SQLAlchemy
+        Base.metadata.create_all(bind=engine)
+
+        # Log de éxito
+        logger.info("✅ Conexión a Azure SQL OK — tablas inicializadas")
+
+    except Exception as e:
+        # Captura cualquier error (credenciales, red, firewall, etc.)
+        logger.error(f"❌ Error al conectar/inicializar DB: {e}")
+
+        # IMPORTANTE:
+        # No hacemos raise → la app sigue viva para ECS/ALB
+        # Esto permite debuggear sin que el contenedor entre en crash loop
+
+    # Continúa ejecución normal de FastAPI
     yield
 
 app = FastAPI(

@@ -1,10 +1,3 @@
-# ─── LABROLE (AWS Academy) ────────────────────────────────────────────────────
-# AWS Academy NO permite crear roles IAM nuevos via Terraform.
-# Se usa el LabRole preexistente como execution_role y task_role.
-data "aws_iam_role" "lab_role" {
-  name = "LabRole"
-}
-
 # ─── CLOUDWATCH LOG GROUP ─────────────────────────────────────────────────────
 resource "aws_cloudwatch_log_group" "backend" {
   name              = "/ecs/${var.project_name}/backend"

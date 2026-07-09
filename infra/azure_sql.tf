@@ -1,5 +1,6 @@
 # ─── RESOURCE GROUP ───────────────────────────────────────────────────────────
-# Región: East US — menor latencia cross-cloud hacia AWS us-east-1
+# Región: configurable vía var.azure_region (actualmente Brazil South,
+# ajustado por disponibilidad de la suscripción académica)
 resource "azurerm_resource_group" "main" {
   name     = "${var.project_name}-rg"
   location = var.azure_region
@@ -35,6 +36,7 @@ resource "azurerm_mssql_database" "main" {
   server_id = azurerm_mssql_server.main.id
   # Basic: 5 DTUs, 2 GB — suficiente para PoC, costo mínimo (~$5 USD/mes)
   sku_name  = "Basic"
+  depends_on = [azurerm_mssql_server.main]
   tags      = { Project = var.project_name }
 }
 
