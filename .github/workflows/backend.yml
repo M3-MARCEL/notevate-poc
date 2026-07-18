@@ -1,0 +1,96 @@
+name: Backend — CI/CD/Sec Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+jobs:
+  # ─── SECRET SCANNING ──────────────────────────────────────────────────────
+  secret-scanning:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Escanear credenciales expuestas
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── IaC SCANNING (Dockerfile) ────────────────────────────────────────────
+  iac-scanning:
+    name: IaC Scanning (Hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hadolint — backend/Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: backend/Dockerfile
+          no-fail: true
+
+  # ─── SAST + SCA ────────────────────────────────────────────────────────────
+  sast-sca:
+    name: SAST (Bandit) + SCA (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r backend/requirements.txt
+          pip install bandit pip-audit flake8
+
+      - name: Lint (flake8)
+        run: flake8 backend/src/ --max-line-length=100 --exclude=__pycache__
+
+      - name: SAST — Bandit
+        run: bandit -r backend/src/ -f json -o bandit-backend.json || true
+
+      - name: SCA — pip-audit (CVEs en dependencias)
+        run: pip-audit -r backend/requirements.txt --desc || true
+
+      - name: Publicar reporte Bandit
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report-backend
+          path: bandit-backend.json
+
+  # ─── IMAGE SCANNING (Trivy) ─────────────────────────────────────────────────
+  build-and-scan:
+    name: Build + Trivy
+    needs: [sast-sca, iac-scanning, secret-scanning]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build imagen Docker
+        run: docker build -t notevate/backend:${{ github.sha }} ./backend
+
+      - name: Trivy — escaneo de vulnerabilidades en la imagen
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "notevate/backend:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-backend.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Publicar resultados Trivy en GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-backend.sarif"
+          category: "trivy-backend"

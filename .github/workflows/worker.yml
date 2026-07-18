@@ -1,0 +1,96 @@
+name: Worker — CI/CD/Sec Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'worker/**'
+      - '.github/workflows/worker.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'worker/**'
+
+jobs:
+  # ─── SECRET SCANNING ──────────────────────────────────────────────────────
+  secret-scanning:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Escanear credenciales expuestas
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── IaC SCANNING (Dockerfile) ────────────────────────────────────────────
+  iac-scanning:
+    name: IaC Scanning (Hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hadolint — worker/Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: worker/Dockerfile
+          no-fail: true
+
+  # ─── SAST + SCA ────────────────────────────────────────────────────────────
+  sast-sca:
+    name: SAST (Bandit) + SCA (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: |
+          pip install -r worker/requirements.txt
+          pip install bandit pip-audit flake8
+
+      - name: Lint (flake8)
+        run: flake8 worker/src/ --max-line-length=100 --exclude=__pycache__
+
+      - name: SAST — Bandit
+        run: bandit -r worker/src/ -f json -o bandit-worker.json || true
+
+      - name: SCA — pip-audit (CVEs en dependencias)
+        run: pip-audit -r worker/requirements.txt --desc || true
+
+      - name: Publicar reporte Bandit
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report-worker
+          path: bandit-worker.json
+
+  # ─── IMAGE SCANNING (Trivy) ─────────────────────────────────────────────────
+  build-and-scan:
+    name: Build + Trivy
+    needs: [sast-sca, iac-scanning, secret-scanning]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build imagen Docker
+        run: docker build -t notevate/worker:${{ github.sha }} ./worker
+
+      - name: Trivy — escaneo de vulnerabilidades en la imagen
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "notevate/worker:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-worker.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Publicar resultados Trivy en GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-worker.sarif"
+          category: "trivy-worker"
