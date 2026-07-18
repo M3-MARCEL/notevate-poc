@@ -31,11 +31,12 @@ async def lifespan(app: FastAPI):
     # Continúa ejecución normal de FastAPI
     yield
 
+
 app = FastAPI(
     title="Notevate API",
     description="API REST para la plataforma de productividad personal Notevate",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -54,8 +55,9 @@ async def health():
         "status": "ok",
         "service": "notevate-backend",
         "environment": os.getenv("ENVIRONMENT", "development"),
-        "azure_sql_server": os.getenv("AZURE_SQL_SERVER", "not-configured")
+        "azure_sql_server": os.getenv("AZURE_SQL_SERVER", "not-configured"),
     }
 
-app.include_router(users.router,   prefix="/api/users",   tags=["Usuarios"])
+
+app.include_router(users.router, prefix="/api/users", tags=["Usuarios"])
 app.include_router(entries.router, prefix="/api/entries", tags=["Entradas"])

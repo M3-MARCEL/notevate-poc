@@ -12,6 +12,7 @@ Responsabilidades:
 Este módulo se despliega como contenedor independiente y no comparte
 proceso ni dependencias de build con notevate-backend.
 """
+
 from fastapi import FastAPI, Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 import httpx

@@ -5,7 +5,6 @@ from ..models import User
 from ..schemas import UserCreate, UserLogin, UserResponse, Token
 from ..auth import hash_password, verify_password, create_token, get_current_user
 
-
 router = APIRouter()
 
 
@@ -13,8 +12,12 @@ router = APIRouter()
 def register(data: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(400, "El email ya está registrado")
-    user = User(email=data.email, password_hash=hash_password(data.password),
-                name=data.name, profile_type=data.profile_type)
+    user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        name=data.name,
+        profile_type=data.profile_type,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

@@ -7,14 +7,16 @@ from ..models import User, Entry
 from ..schemas import EntryCreate, EntryUpdate, EntryDecision, EntryResponse
 from ..auth import get_current_user
 
-
 router = APIRouter()
 
 
 @router.get("/", response_model=List[EntryResponse])
-def list_entries(type: Optional[str] = None, status: Optional[str] = None,
-                 db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
+def list_entries(
+    type: Optional[str] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     q = db.query(Entry).filter(Entry.user_id == current_user.id)
     if type:
         q = q.filter(Entry.type == type)
@@ -24,8 +26,9 @@ def list_entries(type: Optional[str] = None, status: Optional[str] = None,
 
 
 @router.post("/", response_model=EntryResponse, status_code=201)
-def create_entry(data: EntryCreate, db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
+def create_entry(
+    data: EntryCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
     entry = Entry(user_id=current_user.id, **data.model_dump())
     db.add(entry)
     db.commit()
@@ -34,11 +37,13 @@ def create_entry(data: EntryCreate, db: Session = Depends(get_db),
 
 
 @router.put("/{entry_id}", response_model=EntryResponse)
-def update_entry(entry_id: str, data: EntryUpdate,
-                 db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
-    entry = db.query(Entry).filter(Entry.id == entry_id,
-                                   Entry.user_id == current_user.id).first()
+def update_entry(
+    entry_id: str,
+    data: EntryUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    entry = db.query(Entry).filter(Entry.id == entry_id, Entry.user_id == current_user.id).first()
     if not entry:
         raise HTTPException(404, "Entrada no encontrada")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -51,10 +56,10 @@ def update_entry(entry_id: str, data: EntryUpdate,
 
 
 @router.delete("/{entry_id}", status_code=204)
-def delete_entry(entry_id: str, db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
-    entry = db.query(Entry).filter(Entry.id == entry_id,
-                                   Entry.user_id == current_user.id).first()
+def delete_entry(
+    entry_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    entry = db.query(Entry).filter(Entry.id == entry_id, Entry.user_id == current_user.id).first()
     if not entry:
         raise HTTPException(404, "Entrada no encontrada")
     db.delete(entry)
@@ -63,25 +68,29 @@ def delete_entry(entry_id: str, db: Session = Depends(get_db),
 
 # ─── MOTOR DE DECISIONES ──────────────────────────────────────────────────────
 @router.get("/overdue", response_model=List[EntryResponse])
-def get_overdue(db: Session = Depends(get_db),
-                current_user: User = Depends(get_current_user)):
+def get_overdue(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Retorna entradas vencidas pendientes de decisión."""
     now = datetime.now(timezone.utc)
-    return db.query(Entry).filter(
-        Entry.user_id == current_user.id,
-        Entry.due_date < now,
-        Entry.status == "pending"
-    ).all()
+    return (
+        db.query(Entry)
+        .filter(Entry.user_id == current_user.id, Entry.due_date < now, Entry.status == "pending")
+        .all()
+    )
 
 
 @router.post("/{entry_id}/decision", response_model=EntryResponse)
-def apply_decision(entry_id: str, decision: EntryDecision,
-                   db: Session = Depends(get_db),
-                   current_user: User = Depends(get_current_user)):
+def apply_decision(
+    entry_id: str,
+    decision: EntryDecision,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Motor de decisiones: reagendar, dividir o descartar una entrada vencida."""
-    entry = db.query(Entry).filter(Entry.id == entry_id,
-                                   Entry.user_id == current_user.id,
-                                   Entry.status == "pending").first()
+    entry = (
+        db.query(Entry)
+        .filter(Entry.id == entry_id, Entry.user_id == current_user.id, Entry.status == "pending")
+        .first()
+    )
     if not entry:
         raise HTTPException(404, "Entrada no encontrada o ya procesada")
 
@@ -95,8 +104,15 @@ def apply_decision(entry_id: str, decision: EntryDecision,
         if not decision.subtasks or len(decision.subtasks) < 2:
             raise HTTPException(400, "Debe proporcionar al menos 2 subtareas")
         for title in decision.subtasks:
-            db.add(Entry(user_id=current_user.id, type="task",
-                         title=title, priority=entry.priority, status="pending"))
+            db.add(
+                Entry(
+                    user_id=current_user.id,
+                    type="task",
+                    title=title,
+                    priority=entry.priority,
+                    status="pending",
+                )
+            )
         entry.status = "discarded"
 
     elif decision.action == "discard":

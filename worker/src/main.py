@@ -14,6 +14,7 @@ intervalo configurable y registra resultados en logs estructurados
 (en una siguiente iteración se podría escribir a una tabla de métricas
 o publicar en una cola).
 """
+
 import logging
 import os
 import time
@@ -47,7 +48,8 @@ def compute_productivity_metrics(db: Session) -> dict:
         total = len(user_entries)
         completed = sum(1 for e in user_entries if e.status == "completed")
         overdue = sum(
-            1 for e in user_entries
+            1
+            for e in user_entries
             if e.status == "pending"
             and e.due_date is not None
             and e.due_date.replace(tzinfo=timezone.utc) < now

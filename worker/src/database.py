@@ -3,13 +3,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 AZURE_SQL_SERVER = os.getenv("AZURE_SQL_SERVER", "localhost")
-AZURE_SQL_DB     = os.getenv("AZURE_SQL_DB", "notevate-db")
-AZURE_SQL_USER   = os.getenv("AZURE_SQL_USER", "sa")
-AZURE_SQL_PASS   = os.getenv("AZURE_SQL_PASS", "password")
+AZURE_SQL_DB = os.getenv("AZURE_SQL_DB", "notevate-db")
+AZURE_SQL_USER = os.getenv("AZURE_SQL_USER", "sa")
+AZURE_SQL_PASS = os.getenv("AZURE_SQL_PASS", "password")
 
 DATABASE_URL = (
-    f"mssql+pymssql://{AZURE_SQL_USER}:{AZURE_SQL_PASS}"
-    f"@{AZURE_SQL_SERVER}/{AZURE_SQL_DB}"
+    f"mssql+pymssql://{AZURE_SQL_USER}:{AZURE_SQL_PASS}" f"@{AZURE_SQL_SERVER}/{AZURE_SQL_DB}"
 )
 
 engine = create_engine(
