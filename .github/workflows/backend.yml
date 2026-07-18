@@ -73,6 +73,9 @@ jobs:
     name: Build + Trivy
     needs: [sast-sca, iac-scanning, secret-scanning]
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
