@@ -27,6 +27,7 @@ def create_entry(data: EntryCreate, db: Session = Depends(get_db),
     db.refresh(entry)
     return entry
 
+
 @router.put("/{entry_id}", response_model=EntryResponse)
 def update_entry(entry_id: str, data: EntryUpdate,
                  db: Session = Depends(get_db),
@@ -43,6 +44,7 @@ def update_entry(entry_id: str, data: EntryUpdate,
     db.refresh(entry)
     return entry
 
+
 @router.delete("/{entry_id}", status_code=204)
 def delete_entry(entry_id: str, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
@@ -52,6 +54,7 @@ def delete_entry(entry_id: str, db: Session = Depends(get_db),
         raise HTTPException(404, "Entrada no encontrada")
     db.delete(entry)
     db.commit()
+
 
 # ─── MOTOR DE DECISIONES ──────────────────────────────────────────────────────
 @router.get("/overdue", response_model=List[EntryResponse])
@@ -64,6 +67,7 @@ def get_overdue(db: Session = Depends(get_db),
         Entry.due_date < now,
         Entry.status == "pending"
     ).all()
+
 
 @router.post("/{entry_id}/decision", response_model=EntryResponse)
 def apply_decision(entry_id: str, decision: EntryDecision,
