@@ -7,16 +7,21 @@ from ..models import User, Entry
 from ..schemas import EntryCreate, EntryUpdate, EntryDecision, EntryResponse
 from ..auth import get_current_user
 
+
 router = APIRouter()
+
 
 @router.get("/", response_model=List[EntryResponse])
 def list_entries(type: Optional[str] = None, status: Optional[str] = None,
                  db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
     q = db.query(Entry).filter(Entry.user_id == current_user.id)
-    if type:   q = q.filter(Entry.type == type)
-    if status: q = q.filter(Entry.status == status)
+    if type:
+        q = q.filter(Entry.type == type)
+    if status:
+        q = q.filter(Entry.status == status)
     return q.order_by(Entry.created_at.desc()).all()
+
 
 @router.post("/", response_model=EntryResponse, status_code=201)
 def create_entry(data: EntryCreate, db: Session = Depends(get_db),
