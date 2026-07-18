@@ -10,6 +10,7 @@ from .routers import users, entries
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -44,6 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ─── HEALTH CHECK (requerido por el ALB de AWS) ────────────────────────────────
 @app.get("/health")
