@@ -7,24 +7,24 @@ Nació como una exploración práctica de arquitectura multicloud: el backend co
 ## Arquitectura
 
 ```
-                    ┌─────────────────────────────┐
+                    ┌──────────────────────────────┐
                     │      Azure Static Web Apps   │
                     │      (Frontend React)        │
                     └──────────────┬───────────────┘
                                    │ HTTPS / REST
                                    ▼
-   ┌───────────────────────────────────────────────────────┐
-   │                    AWS — us-east-1                     │
+   ┌──────────────────────────────────────────────────────────┐
+   │                    AWS — us-east-1                       │
    │                                                          │
-   │  EC2 (Nginx + Let's Encrypt) ──▶ ALB ──▶ ECS Fargate     │
+   │  EC2 (Nginx + Let's Encrypt) ──▶ ALB ──▶ ECS Fargate    │
    │                                          (2 AZs, 2 tasks)│
    │                                          Backend FastAPI │
    └──────────────────────┬───────────────────────────────────┘
                           │ NAT Gateway (salida)
                           ▼
-                 ┌─────────────────────┐
+                 ┌──────────────────────┐
                  │  Azure SQL Database  │
-                 └─────────────────────┘
+                 └──────────────────────┘
 ```
 
 - **Frontend**: React, desplegado en Azure Static Web Apps
