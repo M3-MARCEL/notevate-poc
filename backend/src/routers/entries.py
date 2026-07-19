@@ -98,7 +98,7 @@ def apply_decision(
         if not decision.new_due_date:
             raise HTTPException(400, "Debe proporcionar nueva fecha")
         entry.due_date = decision.new_due_date
-        entry.status = "rescheduled"
+        entry.status = "pending"
 
     elif decision.action == "split":
         if not decision.subtasks or len(decision.subtasks) < 2:
