@@ -70,7 +70,6 @@ Requiere credenciales de AWS y Azure configuradas localmente, más un `terraform
 ## Limitaciones conocidas
 
 - El flujo de reagendar usa un `prompt()` nativo del navegador para elegir la nueva fecha — funcional, pero lejos de pulido. Un selector de fecha/hora real es el siguiente paso obvio.
-- Las tareas reagendadas actualmente salen de la lista de "pendientes" en vez de reaparecer con su nueva fecha — es un tema de filtrado en el frontend, no un problema del backend.
 - La configuración del proxy Nginx/Let's Encrypt vive parcialmente fuera de Terraform (parte se configuró directo por SSH), así que todavía no es 100% reproducible solo con `terraform apply`.
 
 ## Stack
