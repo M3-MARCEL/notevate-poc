@@ -61,4 +61,4 @@ async def health():
 
 app.include_router(users.router, prefix="/api/users", tags=["Usuarios"])
 app.include_router(entries.router, prefix="/api/entries", tags=["Entradas"])
-# Pipeline Test 
+# Pipeline Test
