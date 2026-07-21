@@ -99,4 +99,6 @@ async def proxy(path: str, request: Request):
             raise HTTPException(status_code=502, detail="Backend no disponible")
 
     return upstream_response.json() if upstream_response.content else {}
-# Pipeline Test 
+
+
+# Pipeline Test
